@@ -1,0 +1,11 @@
+# Data Manipulation
+pandas==2.0.1         # Primary data manipulation library
+numpy==1.24.3         # Numerical computing support
+
+# Data Storage and Serialization
+pyarrow==12.0.0       # Efficient data file handling (parquet)
+sqlalchemy==2.0.15    # SQL database integration
+psycopg2-binary==2.9.6 # PostgreSQL database adapter
+
+# Machine Learning (optional, for advanced processing)
+scikit-learn==1.2.2   # Machine learning utilities

@@ -1,0 +1,41 @@
+# Airline Data Pipeline
+
+## Overview
+This project demonstrates a complete data engineering pipeline using Docker, processing Airline On-Time Performance data.
+
+## Components
+- SFTP Server: Simulates data source
+- Data Ingestion: Retrieves files from SFTP
+- Data Processing: Cleans and transforms flight data
+- API: Provides access to processed data
+
+## Prerequisites
+- Docker
+- Docker Compose
+
+## Setup and Run
+1. Clone the repository
+2. Place sample flight data CSV files in `data/sample_flights/`
+3. Run: `docker-compose up --build`
+
+## API Usage
+Endpoint: `http://localhost:5000/flights`
+
+### Parameters
+- `start_date`: Filter flights from this date
+- `end_date`: Filter flights until this date
+- `cursor`: Pagination cursor
+- `limit`: Number of records per page (default 100)
+
+### Authentication
+- Username: `apiuser`
+- Password: Set in `docker-compose.yml`
+
+## Error Handling
+- Logs maintained in respective service containers
+- Robust error handling in ingestion and processing scripts
+
+## Data Processing
+- Combines multiple CSV files
+- Cleans and transforms data
+- Categorizes flight performance

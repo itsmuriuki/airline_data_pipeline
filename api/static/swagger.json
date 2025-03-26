@@ -1,0 +1,146 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Flight Data API",
+    "description": "API for accessing processed flight data with filtering and pagination",
+    "version": "1.0.0"
+  },
+  "basePath": "/api",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "securityDefinitions": {
+    "BasicAuth": {
+      "type": "basic"
+    }
+  },
+  "paths": {
+    "/flights": {
+      "get": {
+        "tags": ["Flights"],
+        "summary": "Get flight data",
+        "description": "Retrieve flight data with filtering and cursor-based pagination",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Filter flights from this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Filter flights until this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by origin airport code"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "type": "string",
+            "description": "Filter by destination airport code"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "type": "string",
+            "description": "Pagination cursor from previous response"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "default": 100,
+            "description": "Number of records to return (max 1000)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ]
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": ["Metrics"],
+        "summary": "Get flight metrics",
+        "description": "Retrieve aggregated flight metrics with date filtering",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Calculate metrics from this date (YYYY-MM-DD)"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "type": "string",
+            "format": "date",
+            "description": "Calculate metrics until this date (YYYY-MM-DD)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ]
+      }
+    },
+    "/airports": {
+      "get": {
+        "tags": ["Airports"],
+        "summary": "Get airport list",
+        "description": "Retrieve list of all airports in the dataset",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        },
+        "security": [
+          {
+            "BasicAuth": []
+          }
+        ]
+      }
+    }
+  }
+} 

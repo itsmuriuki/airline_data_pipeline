@@ -1,0 +1,17 @@
+# Data ingestion requirements
+pandas==2.1.4
+paramiko==3.4.0
+loguru==0.7.2
+python-dotenv==1.0.0
+
+# SFTP and File Transfer
+pysftp==0.2.9         # SFTP operations simplified
+
+# Data Handling
+numpy==1.24.3         # Numerical computing support
+
+# Logging
+python-dotenv==1.0.0  # Load environment variables from .env file
+
+# Optional: for advanced file handling
+pyarrow==12.0.0       # Enhanced file I/O (parquet, csv support)
