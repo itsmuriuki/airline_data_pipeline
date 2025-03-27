@@ -1,5 +1,5 @@
 # Data Manipulation
-pandas==2.0.1         # Primary data manipulation library
+pandas==2.1.4         # Primary data manipulation library
 numpy==1.24.3         # Numerical computing support
 
 # Data Storage and Serialization
@@ -9,3 +9,6 @@ psycopg2-binary==2.9.6 # PostgreSQL database adapter
 
 # Machine Learning (optional, for advanced processing)
 scikit-learn==1.2.2   # Machine learning utilities
+
+# Additional requirements
+loguru==0.7.2

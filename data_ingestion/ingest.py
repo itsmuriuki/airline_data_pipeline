@@ -129,12 +129,12 @@ def create_mock_sftp_server():
             shutil.copy2(source_csv, dest_csv)
             logger.info(f"Copied existing flight_data.csv to mock SFTP directory")
         else:
-            # Fallback to create minimal flight data if original doesn't exist
+            # Fallback to create minimal flight data with correct column names
             logger.warning(f"Could not find {source_csv}, creating minimal sample data")
             csv_content = (
-                "flight_date,flight_number,origin,destination,departure_time,arrival_time\n"
-                "2024-01-01,FL001,JFK,LAX,08:00,11:00\n"
-                "2024-01-01,FL002,LAX,JFK,09:30,17:30\n"
+                "FL_DATE,OP_CARRIER,ORIGIN,DEST,DEP_TIME,ARR_TIME\n"
+                "2024-01-01,AA,JFK,LAX,0800,1100\n"
+                "2024-01-01,DL,LAX,JFK,0930,1730\n"
             )
             dest_csv.write_text(csv_content)
         mock_files.append('flight_data.csv')
@@ -286,9 +286,9 @@ def validate_downloaded_files(local_path: str = 'data/raw') -> bool:
         send_alert("Validation Error", error_msg)
         return False
 
-def main():
+def process_flight_data():
     """
-    Main execution function for data ingestion
+    Main function to process flight data, called by Airflow
     """
     try:
         # Download files
@@ -296,12 +296,15 @@ def main():
         
         # Validate downloaded files
         if validate_downloaded_files():
-            logger.success("Data ingestion completed successfully")
+            logger.success("Flight data ingestion completed successfully")
+            return True
         else:
-            logger.error("Data ingestion failed during validation")
+            logger.error("Flight data ingestion failed during validation")
+            return False
     
     except Exception as e:
-        logger.exception(f"Data ingestion process failed: {e}")
+        logger.exception(f"Flight data ingestion process failed: {e}")
+        raise
 
 if __name__ == "__main__":
-    main()
+    process_flight_data()

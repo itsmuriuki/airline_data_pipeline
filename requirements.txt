@@ -1,11 +1,16 @@
 # Main project requirements
-pandas==2.1.4
-numpy==1.24.3
-loguru==0.7.2
-flask==3.0.0
+pandas
+paramiko
+loguru
+
+# Flask and related packages
+flask<2.3,>=2.2
 flask-httpauth==4.8.0
 flask-limiter==3.5.0
 flask-swagger-ui==4.11.1
-werkzeug==3.0.1
-paramiko==3.4.0
-python-dotenv==1.0.0 
+werkzeug<3.0.0
+
+# Other dependencies
+python-dotenv==1.0.0
+
+# Note: Don't include apache-airflow as it's already installed in the base image 
