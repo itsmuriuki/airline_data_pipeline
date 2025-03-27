@@ -1,7 +1,16 @@
 # Airline Data Pipeline
 
 ## Overview
-This project demonstrates a complete data engineering pipeline using Docker, processing Airline On-Time Performance data.
+This project implements a complete data engineering pipeline that combines Apache Airflow for orchestration and a REST API for data access, processing Airline On-Time Performance data.
+
+## Architecture
+- **Apache Airflow**: Orchestrates the data pipeline
+- **PostgreSQL**: Metadata database for Airflow
+- **Redis**: Message broker for Celery executor
+- **Flask API**: Provides RESTful access to processed data
+- **SFTP Server**: Simulates data source
+
+## Project Structure
 
 ## Components
 - SFTP Server: Simulates data source
@@ -57,4 +66,34 @@ Get metrics for a specific date range
 - Cleans and transforms data
 - Categorizes flight performance
 - Saves to `data/processed/`
+
+
+## Data Pipeline Components
+
+### Airflow DAG: flight_data_pipeline
+The automated pipeline consists of two tasks:
+1. `ingest_data`: Retrieves and validates flight data
+2. `process_data`: Cleans and transforms the data
+
+Schedule: Runs daily at midnight UTC
+
+# To use Airflow:
+1. Start the Airflow services:
+   ```bash
+   docker-compose up -d
+   ```
+2. Access Airflow UI:
+   - URL: http://localhost:8080
+   - Username: airflow
+   - Password: airflow
+
+3. Enable 'flight_data_pipeline'
+4. Trigger the DAG manually or wait for scheduled run
+
+
+## Note
+The API and Airflow components work together:
+- Airflow handles automated data processing
+- API provides easy access to processed data
+- Both can be used independently or together
 
