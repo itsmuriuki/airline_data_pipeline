@@ -119,8 +119,8 @@ def get_flights():
     try:
         # Load processed flight data from CSV
         df = pd.read_csv('data/processed/processed_flights.csv')
-        # Convert FL_DATE back to datetime
-        df['FL_DATE'] = pd.to_datetime(df['FL_DATE'])
+        # Convert flight_date back to datetime
+        df['flight_date'] = pd.to_datetime(df['flight_date'])
         
         # Get query parameters
         start_date = request.args.get('start_date')
@@ -135,25 +135,25 @@ def get_flights():
         
         # Apply filters
         if start_date:
-            df = df[df['FL_DATE'] >= start_date]
+            df = df[df['flight_date'] >= start_date]
         if end_date:
-            df = df[df['FL_DATE'] <= end_date]
+            df = df[df['flight_date'] <= end_date]
         if origin:
-            df = df[df['ORIGIN'] == origin.upper()]
+            df = df[df['origin'] == origin.upper()]
         if destination:
-            df = df[df['DEST'] == destination.upper()]
+            df = df[df['destination'] == destination.upper()]
             
         # Apply cursor-based pagination
         if cursor:
             last_date, last_id = decode_cursor(cursor)
             if last_date and last_id is not None:
                 df = df[
-                    (df['FL_DATE'] > last_date) |
-                    ((df['FL_DATE'] == last_date) & (df['index'] > last_id))
+                    (df['flight_date'] > last_date) |
+                    ((df['flight_date'] == last_date) & (df['index'] > last_id))
                 ]
         
         # Sort for consistent pagination
-        df = df.sort_values(['FL_DATE', 'index'])
+        df = df.sort_values(['flight_date', 'index'])
         
         # Get page of results
         page_df = df.head(limit)
@@ -163,7 +163,7 @@ def get_flights():
         if len(page_df) == limit and len(df) > limit:
             last_row = page_df.iloc[-1]
             next_cursor = encode_cursor(
-                str(last_row['FL_DATE'].date()),
+                str(last_row['flight_date'].date()),
                 last_row['index']
             )
         
@@ -229,8 +229,8 @@ def get_metrics():
     try:
         # Load processed flight data from CSV
         df = pd.read_csv('data/processed/processed_flights.csv')
-        # Convert FL_DATE back to datetime
-        df['FL_DATE'] = pd.to_datetime(df['FL_DATE'])
+        # Convert flight_date back to datetime
+        df['flight_date'] = pd.to_datetime(df['flight_date'])
         
         # Get date range parameters
         start_date = request.args.get('start_date')
@@ -238,27 +238,50 @@ def get_metrics():
         
         # Apply date filters if provided
         if start_date:
-            df = df[df['FL_DATE'] >= start_date]
+            df = df[df['flight_date'] >= start_date]
         if end_date:
-            df = df[df['FL_DATE'] <= end_date]
+            df = df[df['flight_date'] <= end_date]
         
         # Calculate metrics
-        top_routes = df.groupby(['ORIGIN', 'DEST']).size().nlargest(5)
+        top_routes = df.groupby(['origin', 'destination']).size().nlargest(5)
         top_routes_dict = {f"{origin}-{dest}": count 
                           for (origin, dest), count in top_routes.items()}
         
+        # Calculate delays based on actual vs scheduled times
+        df['is_delayed'] = (pd.to_numeric(df['actual_departure']) > 
+                           pd.to_numeric(df['scheduled_departure']))
+        
+        # Calculate cancellation rate (flights with no actual departure/arrival)
+        df['is_cancelled'] = df['actual_departure'].isna() | df['actual_arrival'].isna()
+        cancellation_rate = float(df['is_cancelled'].mean() * 100)
+        
+        # Calculate diversion rate based on available data
+        # For now, set to 0 as we don't have diversion information
+        diversion_rate = 0.0
+        
         metrics = {
             'total_flights': len(df),
-            'cancellation_rate': float(df['CANCELLED'].mean() * 100),
-            'diversion_rate': float(df['DIVERTED'].mean() * 100),
-            'delay_rate': float(df['IS_DELAYED'].mean() * 100),
+            'delay_rate': float(df['is_delayed'].mean() * 100),
+            'cancellation_rate': cancellation_rate,
+            'diversion_rate': diversion_rate,
             'top_routes': top_routes_dict,
-            'top_carriers': df['OP_CARRIER'].value_counts().nlargest(5).to_dict(),
+            'top_carriers': df['airline'].value_counts().nlargest(5).to_dict(),
             'date_range': {
-                'start': str(df['FL_DATE'].min().date()),
-                'end': str(df['FL_DATE'].max().date())
+                'start': str(df['flight_date'].min().date()),
+                'end': str(df['flight_date'].max().date())
             }
         }
+        
+        # Add average delays
+        df['departure_delay'] = pd.to_numeric(df['actual_departure']) - pd.to_numeric(df['scheduled_departure'])
+        df['arrival_delay'] = pd.to_numeric(df['actual_arrival']) - pd.to_numeric(df['scheduled_arrival'])
+        
+        metrics.update({
+            'avg_departure_delay': float(df['departure_delay'].mean()),
+            'avg_arrival_delay': float(df['arrival_delay'].mean()),
+            'max_departure_delay': float(df['departure_delay'].max()),
+            'max_arrival_delay': float(df['arrival_delay'].max())
+        })
         
         return jsonify(metrics)
     
@@ -296,8 +319,8 @@ def get_airports():
         # Load processed flight data from CSV
         df = pd.read_csv('data/processed/processed_flights.csv')
         
-        origins = df['ORIGIN'].unique().tolist()
-        destinations = df['DEST'].unique().tolist()
+        origins = df['origin'].unique().tolist()
+        destinations = df['destination'].unique().tolist()
         airports = sorted(list(set(origins + destinations)))
         
         return jsonify({

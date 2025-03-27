@@ -10,6 +10,7 @@ from pathlib import Path
 import smtplib
 from email.message import EmailMessage
 from typing import List, Tuple, Dict, Any
+from datetime import datetime
 
 # Configure Loguru with more detailed logging
 logger.remove()  # Remove default handler
@@ -287,43 +288,51 @@ def validate_downloaded_files(local_path: str = 'data/raw') -> bool:
         return False
 
 def process_flight_data():
-    """
-    Process flight data from raw directory
-    """
     try:
-        # Set up input/output paths
-        raw_dir = '/opt/airflow/data/raw'
-        processed_dir = '/opt/airflow/data/processed'
-        
-        # Ensure directories exist
+        # Use relative paths instead of absolute Airflow paths
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        raw_dir = os.path.join(base_dir, 'data', 'raw')
+        processed_dir = os.path.join(base_dir, 'data', 'processed')
+
+        # Create directories if they don't exist
         os.makedirs(raw_dir, exist_ok=True)
         os.makedirs(processed_dir, exist_ok=True)
-        
-        # Read raw flight data
-        raw_file = os.path.join(raw_dir, 'flight_data.csv')
-        logger.info(f"Reading data from {raw_file}")
-        
-        if not os.path.exists(raw_file):
-            raise FileNotFoundError(f"Raw file not found: {raw_file}")
-            
-        df = pd.read_csv(raw_file)
-        
-        # Basic validation
-        required_columns = ['flight_date', 'airline', 'flight_number', 
-                          'origin', 'destination', 'scheduled_departure',
-                          'actual_departure', 'scheduled_arrival', 'actual_arrival']
-                          
+
+        # Define input and output paths
+        input_file = os.path.join(raw_dir, 'flight_data.csv')
+        output_file = os.path.join(processed_dir, 'processed_flights.csv')
+
+        logger.info(f"Reading data from {input_file}")
+        df = pd.read_csv(input_file, low_memory=False)
+
+        # Map the actual column names to our desired names
+        column_mapping = {
+            'FL_DATE': 'flight_date',
+            'OP_CARRIER': 'airline',
+            'OP_CARRIER_FL_NUM': 'flight_number',
+            'ORIGIN': 'origin',
+            'DEST': 'destination',
+            'CRS_DEP_TIME': 'scheduled_departure',
+            'DEP_TIME': 'actual_departure',
+            'CRS_ARR_TIME': 'scheduled_arrival',
+            'ARR_TIME': 'actual_arrival'
+        }
+
+        # Check if required columns exist
+        required_columns = column_mapping.keys()
         missing_cols = [col for col in required_columns if col not in df.columns]
         if missing_cols:
-            raise ValueError(f"Missing required columns: {missing_cols}")
-            
-        # Save validated data
-        output_file = os.path.join(processed_dir, 'validated_flights.csv')
-        df.to_csv(output_file, index=False)
-        logger.info(f"Saved validated data to {output_file}")
-        
+            raise ValueError(f"Missing required columns in raw data: {missing_cols}")
+
+        # Rename columns
+        df_processed = df[required_columns].rename(columns=column_mapping)
+
+        # Save processed data
+        logger.info(f"Saving processed data to {output_file}")
+        df_processed.to_csv(output_file, index=False)
+        logger.info("Data processing completed successfully")
         return "Data ingestion completed successfully"
-        
+
     except Exception as e:
         logger.error(f"Error in data ingestion: {str(e)}")
         raise

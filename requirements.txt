@@ -1,14 +1,24 @@
 # Main project requirements
 numpy==1.24.3
 pandas==1.5.3
-loguru==0.7.2
-flask==3.0.0
+
+# API packages
+flask==2.2.5
 flask-httpauth==4.8.0
 flask-limiter==3.5.0
 flask-swagger-ui==4.11.1
-werkzeug==3.0.1
-python-dotenv==1.0.0
+werkzeug==2.2.3
+
+# SFTP client
 paramiko==3.4.0
+
+# Logging
+loguru==0.7.2
+
+# Airflow compatibility
+apache-airflow==2.10.5
+connexion==2.14.2
+flask-appbuilder==4.5.3
 
 # Database dependencies
 psycopg2-binary

@@ -138,50 +138,37 @@ def calculate_metrics(df: pd.DataFrame) -> Dict[str, Any]:
     return metrics
 
 def process_flight_data():
-    """
-    Process validated flight data and calculate metrics
-    """
     try:
-        # Set up paths
-        input_file = '/opt/airflow/data/processed/validated_flights.csv'
-        output_file = '/opt/airflow/data/processed/processed_flights.csv'
+        # Use relative paths instead of absolute Airflow paths
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        processed_dir = os.path.join(base_dir, 'data', 'processed')
         
+        # Define input and output paths
+        input_file = os.path.join(processed_dir, 'processed_flights.csv')
+        output_file = os.path.join(processed_dir, 'final_flights.csv')
+
+        # Ensure directory exists
+        os.makedirs(processed_dir, exist_ok=True)
+
         if not os.path.exists(input_file):
-            raise FileNotFoundError(f"Validated data file not found: {input_file}")
-            
-        # Read validated data
-        df = pd.read_csv(input_file)
+            raise FileNotFoundError(f"Processed data file not found: {input_file}")
+
+        logger.info(f"Reading processed data from {input_file}")
+        df = pd.read_csv(input_file, low_memory=False)
+
+        # Process the data
+        logger.info("Processing data...")
         
-        # Convert date/time columns
-        date_cols = ['flight_date']
-        time_cols = ['scheduled_departure', 'actual_departure', 
-                    'scheduled_arrival', 'actual_arrival']
-                    
-        for col in date_cols:
-            df[col] = pd.to_datetime(df[col]).dt.date
-            
-        for col in time_cols:
-            df[col] = pd.to_datetime(df[col]).dt.time
-            
-        # Calculate delays
-        df['departure_delay'] = ((pd.to_datetime(df['actual_departure'].astype(str)) - 
-                                pd.to_datetime(df['scheduled_departure'].astype(str)))
-                               .dt.total_seconds() / 60).fillna(0).astype(int)
-                               
-        df['arrival_delay'] = ((pd.to_datetime(df['actual_arrival'].astype(str)) - 
-                              pd.to_datetime(df['scheduled_arrival'].astype(str)))
-                             .dt.total_seconds() / 60).fillna(0).astype(int)
-        
-        # Categorize flights
-        df['flight_status'] = 'On Time'
-        df.loc[df['arrival_delay'] > 15, 'flight_status'] = 'Delayed'
-        
+        # Add your data processing logic here
+        # For example, calculate delays
+        df['departure_delay'] = pd.to_numeric(df['actual_departure']) - pd.to_numeric(df['scheduled_departure'])
+        df['arrival_delay'] = pd.to_numeric(df['actual_arrival']) - pd.to_numeric(df['scheduled_arrival'])
+
         # Save processed data
+        logger.info(f"Saving final processed data to {output_file}")
         df.to_csv(output_file, index=False)
-        logger.info(f"Saved processed data to {output_file}")
-        
-        return "Data processing completed successfully"
-        
+        logger.info("Data processing completed successfully")
+
     except Exception as e:
         logger.error(f"Error in data processing: {str(e)}")
         raise

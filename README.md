@@ -25,8 +25,8 @@ This project implements a complete data engineering pipeline that combines Apach
 3. navigate to the airline-data-pipeline directory `cd airline-data-pipeline`
 4. create a virtual environment `pyenv virtualenv 3.9.10 airline-data-pipeline`
 5. install the requirements `pip install -r requirements.txt`
-6. run the ingestion service `python data-ingestion/ingest.py`
-7. run the processing service `python data-processing/process.py`
+6. run the ingestion service `python data_ingestion/ingest.py`
+7. run the processing service `python data_processing/process.py`
 7. run the API service `python api/app.py`
 
 ## API Usage
@@ -99,11 +99,11 @@ The API and Airflow components work together:
 
 ## To Do: Airflow 
 1. Add metrics to the API
-2. Add a task to the Airflow DAG to load the data into a database
-3. Add a task to the Airflow DAG to run a query on the data
-4. Add a task to the Airflow DAG to save the results of the query to a new CSV file
-5. Add a task to the Airflow DAG to run a query on the data
-6. Add a task to the Airflow DAG to save the results of the query to a new CSV file
+2. Add a task to the Airflow DAG to load the data into a database - Done
+3. Add a task to the Airflow DAG to run a query on the data - Done
+4. Add a task to the Airflow DAG to save the results of the query to a new CSV file - Done
+5. Add a task to the Airflow DAG to run a query on the data - Done
+6. Add a task to the Airflow DAG to save the results of the query to a new CSV file - Done
 
 To DO: Project
 1. Data quality and testing 

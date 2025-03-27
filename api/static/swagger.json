@@ -2,13 +2,12 @@
   "swagger": "2.0",
   "info": {
     "title": "Flight Data API",
-    "description": "API for accessing processed flight data with filtering and pagination",
+    "description": "API for accessing and analyzing flight data",
     "version": "1.0.0"
   },
   "basePath": "/api",
   "schemes": [
-    "http",
-    "https"
+    "http"
   ],
   "securityDefinitions": {
     "BasicAuth": {
@@ -19,8 +18,7 @@
     "/flights": {
       "get": {
         "tags": ["Flights"],
-        "summary": "Get flight data",
-        "description": "Retrieve flight data with filtering and cursor-based pagination",
+        "summary": "Get flight data with filtering and pagination",
         "parameters": [
           {
             "name": "start_date",
@@ -64,7 +62,27 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "flights": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "next_cursor": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized"
@@ -83,8 +101,7 @@
     "/metrics": {
       "get": {
         "tags": ["Metrics"],
-        "summary": "Get flight metrics",
-        "description": "Retrieve aggregated flight metrics with date filtering",
+        "summary": "Get flight metrics with date filtering",
         "parameters": [
           {
             "name": "start_date",
@@ -103,7 +120,45 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "total_flights": {
+                  "type": "integer"
+                },
+                "delay_rate": {
+                  "type": "number"
+                },
+                "cancellation_rate": {
+                  "type": "number"
+                },
+                "diversion_rate": {
+                  "type": "number"
+                },
+                "avg_departure_delay": {
+                  "type": "number"
+                },
+                "avg_arrival_delay": {
+                  "type": "number"
+                },
+                "max_departure_delay": {
+                  "type": "number"
+                },
+                "max_arrival_delay": {
+                  "type": "number"
+                },
+                "top_routes": {
+                  "type": "object"
+                },
+                "top_carriers": {
+                  "type": "object"
+                },
+                "date_range": {
+                  "type": "object"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized"
@@ -122,11 +177,24 @@
     "/airports": {
       "get": {
         "tags": ["Airports"],
-        "summary": "Get airport list",
-        "description": "Retrieve list of all airports in the dataset",
+        "summary": "Get list of all airports",
         "responses": {
           "200": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "airports": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized"
