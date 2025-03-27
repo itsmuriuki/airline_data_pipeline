@@ -31,7 +31,7 @@ This project implements a complete data engineering pipeline that combines Apach
 
 ## API Usage
 Endpoint: `http://localhost:5000/api/...`
-swagger documentation: `http://localhost:5000/docs`
+swagger documentation: `http://localhost:5000/docs` 
 
 ##To test the API endpoints using curl:
 Test the flights endpoint:
@@ -97,3 +97,21 @@ The API and Airflow components work together:
 - API provides easy access to processed data
 - Both can be used independently or together
 
+## To Do: Airflow 
+1. Add metrics to the API
+2. Add a task to the Airflow DAG to load the data into a database
+3. Add a task to the Airflow DAG to run a query on the data
+4. Add a task to the Airflow DAG to save the results of the query to a new CSV file
+5. Add a task to the Airflow DAG to run a query on the data
+6. Add a task to the Airflow DAG to save the results of the query to a new CSV file
+
+To DO: Project
+1. Data quality and testing 
+2. Data lineage and Tracking
+3. Data Vesioning
+4. Data Lake Integration
+5. Data warehouse Integration
+6. Real time data processing
+7. API documentation Enhancement 
+8. Monitoring and alerting 
+9. CI/CD pipeline 
