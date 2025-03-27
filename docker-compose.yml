@@ -13,29 +13,28 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+    networks:
+      - flight_data_network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
       retries: 5
-    networks:
-      - flight_data_network
 
   redis:
     image: redis:latest
+    networks:
+      - flight_data_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 30s
       retries: 50
-    networks:
-      - flight_data_network
 
   airflow-webserver:
     image: apache/airflow:2.7.3
     depends_on:
       - postgres
       - redis
-      - airflow-init
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -46,23 +45,19 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./data_ingestion:/opt/airflow/data_ingestion
-      - ./data_processing:/opt/airflow/data_processing
-      - ./data:/opt/airflow/data
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./requirements.txt:/opt/airflow/requirements.txt
+      - ./data:/opt/airflow/data
+    networks:
+      - flight_data_network
     ports:
       - "8080:8080"
-    command: >
-      bash -c "pip install -r requirements.txt && airflow webserver"
+    command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 10s
       timeout: 10s
       retries: 5
-    networks:
-      - flight_data_network
 
   airflow-scheduler:
     image: apache/airflow:2.7.3
@@ -75,16 +70,12 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./data_ingestion:/opt/airflow/data_ingestion
-      - ./data_processing:/opt/airflow/data_processing
-      - ./data:/opt/airflow/data
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./requirements.txt:/opt/airflow/requirements.txt
-    command: >
-      bash -c "pip install -r requirements.txt && airflow scheduler"
+      - ./data:/opt/airflow/data
     networks:
       - flight_data_network
+    command: scheduler
 
   airflow-worker:
     image: apache/airflow:2.7.3
@@ -97,25 +88,17 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./data_ingestion:/opt/airflow/data_ingestion
-      - ./data_processing:/opt/airflow/data_processing
-      - ./data:/opt/airflow/data
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./requirements.txt:/opt/airflow/requirements.txt
-    command: >
-      bash -c "pip install -r requirements.txt && airflow celery worker"
+      - ./data:/opt/airflow/data
     networks:
       - flight_data_network
+    command: celery worker
 
   airflow-init:
     image: apache/airflow:2.7.3
     entrypoint: /bin/bash
-    command: >
-      -c "
-      pip install -r requirements.txt &&
-      airflow db init &&
-      airflow users create --username airflow --password airflow --firstname Anonymous --lastname Admin --role Admin --email admin@example.com"
+    command: -c "airflow db init && airflow users create --username airflow --password airflow --firstname Anonymous --lastname Admin --role Admin --email admin@example.com"
     depends_on:
       postgres:
         condition: service_healthy
@@ -127,12 +110,9 @@ services:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./data_ingestion:/opt/airflow/data_ingestion
-      - ./data_processing:/opt/airflow/data_processing
-      - ./data:/opt/airflow/data
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
-      - ./requirements.txt:/opt/airflow/requirements.txt
+      - ./data:/opt/airflow/data
     networks:
       - flight_data_network
 

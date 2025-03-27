@@ -10,9 +10,6 @@ from flask_limiter.util import get_remote_address
 from datetime import datetime
 import base64
 from flask_swagger_ui import get_swaggerui_blueprint
-from prometheus_client import Counter, Histogram, generate_latest
-from prometheus_client import CONTENT_TYPE_LATEST
-import time
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -39,16 +36,6 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 users = {
     "admin": generate_password_hash("admin_password")
 }
-
-# Add metric collectors
-REQUEST_COUNT = Counter(
-    'request_count', 'App Request Count',
-    ['method', 'endpoint', 'http_status']
-)
-REQUEST_LATENCY = Histogram(
-    'request_latency_seconds', 'Request latency',
-    ['endpoint']
-)
 
 @auth.verify_password
 def verify_password(username, password):
@@ -328,29 +315,6 @@ def ratelimit_handler(e):
         'error': 'Rate limit exceeded',
         'message': str(e.description)
     }), 429
-
-# Add metrics endpoint
-@app.route('/metrics')
-def metrics():
-    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
-
-# Add metrics collection to existing endpoints
-@app.before_request
-def before_request():
-    request.start_time = time.time()
-
-@app.after_request
-def after_request(response):
-    if hasattr(request, 'start_time'):
-        request_latency = time.time() - request.start_time
-        REQUEST_LATENCY.labels(request.endpoint).observe(request_latency)
-    
-    REQUEST_COUNT.labels(
-        method=request.method,
-        endpoint=request.endpoint,
-        http_status=response.status_code
-    ).inc()
-    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
