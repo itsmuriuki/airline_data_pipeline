@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -20,38 +21,43 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
-venv/
-env/
-ENV/
-.env
+# Airflow
+logs/
+airflow.cfg
+airflow.db
+webserver_config.py
+airflow-webserver.pid
 
-# Data files
-data/raw/*
-data/processed/*
-data/logs/*
-!data/raw/.gitkeep
+# Data
+data/processed/processed_flight_full.csv
 !data/processed/.gitkeep
-!data/logs/.gitkeep
-
+data/raw/flight_data_full.csv
+!data/raw/.gitkeep
 
 # IDE
+.idea/
 .vscode/
 *.swp
 *.swo
-*~
 
-# OS specific
+# OS
 .DS_Store
-Thumbs.db
+.env
+
+# Virtual Environment
+venv/
+ENV/
+.env
 
 # Logs
 *.log
-logs/
 *.log.*
 
 # Credentials and secrets
-.env
 *.pem
 *.key
 *.crt
+
+
+sampling.pydata/processed/processed_flights_full.csv
+data/raw/flight_data.csv

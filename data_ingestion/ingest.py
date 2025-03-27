@@ -288,22 +288,44 @@ def validate_downloaded_files(local_path: str = 'data/raw') -> bool:
 
 def process_flight_data():
     """
-    Main function to process flight data, called by Airflow
+    Process flight data from raw directory
     """
     try:
-        # Download files
-        downloaded_files = download_files()
+        # Set up input/output paths
+        raw_dir = '/opt/airflow/data/raw'
+        processed_dir = '/opt/airflow/data/processed'
         
-        # Validate downloaded files
-        if validate_downloaded_files():
-            logger.success("Flight data ingestion completed successfully")
-            return True
-        else:
-            logger.error("Flight data ingestion failed during validation")
-            return False
-    
+        # Ensure directories exist
+        os.makedirs(raw_dir, exist_ok=True)
+        os.makedirs(processed_dir, exist_ok=True)
+        
+        # Read raw flight data
+        raw_file = os.path.join(raw_dir, 'flight_data.csv')
+        logger.info(f"Reading data from {raw_file}")
+        
+        if not os.path.exists(raw_file):
+            raise FileNotFoundError(f"Raw file not found: {raw_file}")
+            
+        df = pd.read_csv(raw_file)
+        
+        # Basic validation
+        required_columns = ['flight_date', 'airline', 'flight_number', 
+                          'origin', 'destination', 'scheduled_departure',
+                          'actual_departure', 'scheduled_arrival', 'actual_arrival']
+                          
+        missing_cols = [col for col in required_columns if col not in df.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+            
+        # Save validated data
+        output_file = os.path.join(processed_dir, 'validated_flights.csv')
+        df.to_csv(output_file, index=False)
+        logger.info(f"Saved validated data to {output_file}")
+        
+        return "Data ingestion completed successfully"
+        
     except Exception as e:
-        logger.exception(f"Flight data ingestion process failed: {e}")
+        logger.error(f"Error in data ingestion: {str(e)}")
         raise
 
 if __name__ == "__main__":

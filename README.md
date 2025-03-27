@@ -109,9 +109,9 @@ To DO: Project
 1. Data quality and testing 
 2. Data lineage and Tracking
 3. Data Vesioning
-4. Data Lake Integration
-5. Data warehouse Integration
+4. Data Lake Integration - Snowflake, bigquery
+5. Data warehouse Integration - Snowflake, bigquery
 6. Real time data processing
 7. API documentation Enhancement 
-8. Monitoring and alerting 
-9. CI/CD pipeline 
+8. Monitoring and alerting - Grafana and Prometheus
+9. CI/CD pipeline - GithubActions

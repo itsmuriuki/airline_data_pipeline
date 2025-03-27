@@ -1,6 +1,6 @@
 # Main project requirements
-pandas==2.1.4
 numpy==1.24.3
+pandas==1.5.3
 loguru==0.7.2
 flask==3.0.0
 flask-httpauth==4.8.0
@@ -8,5 +8,14 @@ flask-limiter==3.5.0
 flask-swagger-ui==4.11.1
 werkzeug==3.0.1
 python-dotenv==1.0.0
+paramiko==3.4.0
 
-# Note: Don't include apache-airflow as it's already installed in the base image 
+# Database dependencies
+psycopg2-binary
+apache-airflow-providers-postgres
+
+# Note: Don't include apache-airflow as it's already installed in the base image
+
+# Optional: Data validation and testing
+pytest==7.4.3
+great-expectations==0.17.23 

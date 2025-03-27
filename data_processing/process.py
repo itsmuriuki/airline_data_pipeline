@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 import os
+from datetime import datetime
 
 # Configure logging
 logger.remove()
@@ -136,45 +137,54 @@ def calculate_metrics(df: pd.DataFrame) -> Dict[str, Any]:
     
     return metrics
 
-def process_flight_data(input_path='data/raw', output_path='data/processed'):
+def process_flight_data():
     """
-    Main processing function
+    Process validated flight data and calculate metrics
     """
     try:
-        # Create output directory if it doesn't exist
-        os.makedirs(output_path, exist_ok=True)
+        # Set up paths
+        input_file = '/opt/airflow/data/processed/validated_flights.csv'
+        output_file = '/opt/airflow/data/processed/processed_flights.csv'
         
-        # Read raw data
-        input_file = Path(input_path) / 'flight_data.csv'
+        if not os.path.exists(input_file):
+            raise FileNotFoundError(f"Validated data file not found: {input_file}")
+            
+        # Read validated data
         df = pd.read_csv(input_file)
-        logger.info(f"Loaded {len(df)} rows from {input_file}")
         
-        # Clean and transform data
-        df_processed = clean_flight_data(df)
-        logger.info("Data cleaning completed")
+        # Convert date/time columns
+        date_cols = ['flight_date']
+        time_cols = ['scheduled_departure', 'actual_departure', 
+                    'scheduled_arrival', 'actual_arrival']
+                    
+        for col in date_cols:
+            df[col] = pd.to_datetime(df[col]).dt.date
+            
+        for col in time_cols:
+            df[col] = pd.to_datetime(df[col]).dt.time
+            
+        # Calculate delays
+        df['departure_delay'] = ((pd.to_datetime(df['actual_departure'].astype(str)) - 
+                                pd.to_datetime(df['scheduled_departure'].astype(str)))
+                               .dt.total_seconds() / 60).fillna(0).astype(int)
+                               
+        df['arrival_delay'] = ((pd.to_datetime(df['actual_arrival'].astype(str)) - 
+                              pd.to_datetime(df['scheduled_arrival'].astype(str)))
+                             .dt.total_seconds() / 60).fillna(0).astype(int)
         
-        # Validate processed data
-        if not validate_processed_data(df_processed):
-            raise ValueError("Processed data validation failed")
+        # Categorize flights
+        df['flight_status'] = 'On Time'
+        df.loc[df['arrival_delay'] > 15, 'flight_status'] = 'Delayed'
         
-        # Calculate metrics
-        metrics = calculate_metrics(df_processed)
-        logger.info(f"Calculated metrics: {metrics}")
+        # Save processed data
+        df.to_csv(output_file, index=False)
+        logger.info(f"Saved processed data to {output_file}")
         
-        # Save processed data as CSV instead of Parquet
-        output_file = Path(output_path) / 'processed_flights.csv'
-        df_processed.to_csv(output_file, index=False)
-        
-        # Save metrics
-        metrics_file = Path(output_path) / 'flight_metrics.json'
-        pd.Series(metrics).to_json(metrics_file)
-        
-        logger.success(f"Processing completed. Output saved to {output_path}")
-        return True
+        return "Data processing completed successfully"
         
     except Exception as e:
-        logger.error(f"Processing failed: {e}")
-        return False
+        logger.error(f"Error in data processing: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     process_flight_data()
