@@ -1,3 +1,10 @@
+# Data files
+data/processed/processed_flights_full.csv
+data/processed/*.csv
+data/raw/*.csv
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+
 # Python
 __pycache__/
 *.py[cod]
@@ -28,12 +35,6 @@ airflow.db
 webserver_config.py
 airflow-webserver.pid
 
-# Data
-data/processed/processed_flight_full.csv
-!data/processed/.gitkeep
-data/raw/flight_data_full.csv
-!data/raw/.gitkeep
-
 # IDE
 .idea/
 .vscode/
@@ -57,7 +58,6 @@ ENV/
 *.pem
 *.key
 *.crt
-
 
 sampling.pydata/processed/processed_flights_full.csv
 data/raw/flight_data.csv
