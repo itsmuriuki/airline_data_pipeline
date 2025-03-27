@@ -61,3 +61,6 @@ ENV/
 
 sampling.pydata/processed/processed_flights_full.csv
 data/raw/flight_data.csv
+data/processed/processed_flights_full.csv
+data/processed/*.csv
+data/raw/*.csv
