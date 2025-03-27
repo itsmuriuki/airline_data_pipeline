@@ -287,10 +287,10 @@ def validate_downloaded_files(local_path: str = 'data/raw') -> bool:
         send_alert("Validation Error", error_msg)
         return False
 
-def process_flight_data():
+def process_flight_data(**context):
     try:
-        # Use relative paths instead of absolute Airflow paths
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Use absolute paths for Airflow container
+        base_dir = '/opt/airflow'
         raw_dir = os.path.join(base_dir, 'data', 'raw')
         processed_dir = os.path.join(base_dir, 'data', 'processed')
 
@@ -303,6 +303,11 @@ def process_flight_data():
         output_file = os.path.join(processed_dir, 'processed_flights.csv')
 
         logger.info(f"Reading data from {input_file}")
+        
+        # Check if input file exists
+        if not os.path.exists(input_file):
+            raise FileNotFoundError(f"Input file not found at {input_file}")
+            
         df = pd.read_csv(input_file, low_memory=False)
 
         # Map the actual column names to our desired names

@@ -137,18 +137,18 @@ def calculate_metrics(df: pd.DataFrame) -> Dict[str, Any]:
     
     return metrics
 
-def process_flight_data():
+def process_flight_data(**context):
     try:
-        # Use relative paths instead of absolute Airflow paths
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Use absolute paths for Airflow container
+        base_dir = '/opt/airflow'
         processed_dir = os.path.join(base_dir, 'data', 'processed')
         
         # Define input and output paths
         input_file = os.path.join(processed_dir, 'processed_flights.csv')
         output_file = os.path.join(processed_dir, 'final_flights.csv')
 
-        # Ensure directory exists
-        os.makedirs(processed_dir, exist_ok=True)
+        # Ensure directory exists with proper permissions
+        os.makedirs(processed_dir, mode=0o777, exist_ok=True)
 
         if not os.path.exists(input_file):
             raise FileNotFoundError(f"Processed data file not found: {input_file}")
@@ -159,15 +159,19 @@ def process_flight_data():
         # Process the data
         logger.info("Processing data...")
         
-        # Add your data processing logic here
-        # For example, calculate delays
+        # Calculate delays
         df['departure_delay'] = pd.to_numeric(df['actual_departure']) - pd.to_numeric(df['scheduled_departure'])
         df['arrival_delay'] = pd.to_numeric(df['actual_arrival']) - pd.to_numeric(df['scheduled_arrival'])
 
+        # Add flight status
+        df['flight_status'] = 'On Time'
+        df.loc[df['departure_delay'] > 15, 'flight_status'] = 'Delayed'
+        
         # Save processed data
         logger.info(f"Saving final processed data to {output_file}")
         df.to_csv(output_file, index=False)
         logger.info("Data processing completed successfully")
+        return "Data processing completed successfully"
 
     except Exception as e:
         logger.error(f"Error in data processing: {str(e)}")

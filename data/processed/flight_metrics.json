@@ -1,1 +1,143 @@
-{"total_flights":547271,"cancellation_rate":3.7255765425,"diversion_rate":0.2762799417,"delay_rate":26.518306287,"top_routes":{"('OGG', 'HNL')":1001,"('HNL', 'OGG')":994,"('LAX', 'SFO')":858,"('SFO', 'LAX')":857,"('PHX', 'DEN')":802},"top_carriers":{"WN":115389,"AA":77346,"DL":74384,"UA":58855,"OO":56814}}
+{
+  "generated_at": "2025-03-27T18:07:09.494899",
+  "total_flights": 14000,
+  "total_delayed_flights": 3052,
+  "overall_ontime_percentage": 78.2,
+  "airlines": [
+    {
+      "airline": "WN",
+      "total_flights": 2828,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 714,
+      "ontime_flights": 2114,
+      "ontime_percentage": 74.75
+    },
+    {
+      "airline": "AA",
+      "total_flights": 1974,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 483,
+      "ontime_flights": 1491,
+      "ontime_percentage": 75.53
+    },
+    {
+      "airline": "DL",
+      "total_flights": 1813,
+      "avg_departure_delay": 8.54,
+      "avg_arrival_delay": -36.28,
+      "delayed_flights": 350,
+      "ontime_flights": 1463,
+      "ontime_percentage": 80.69
+    },
+    {
+      "airline": "UA",
+      "total_flights": 1547,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 308,
+      "ontime_flights": 1239,
+      "ontime_percentage": 80.09
+    },
+    {
+      "airline": "OO",
+      "total_flights": 1400,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 259,
+      "ontime_flights": 1141,
+      "ontime_percentage": 81.5
+    },
+    {
+      "airline": "MQ",
+      "total_flights": 728,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 168,
+      "ontime_flights": 560,
+      "ontime_percentage": 76.92
+    },
+    {
+      "airline": "B6",
+      "total_flights": 595,
+      "avg_departure_delay": 28.11,
+      "avg_arrival_delay": -62.74,
+      "delayed_flights": 175,
+      "ontime_flights": 420,
+      "ontime_percentage": 70.59
+    },
+    {
+      "airline": "YX",
+      "total_flights": 539,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 77,
+      "ontime_flights": 462,
+      "ontime_percentage": 85.71
+    },
+    {
+      "airline": "AS",
+      "total_flights": 497,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 112,
+      "ontime_flights": 385,
+      "ontime_percentage": 77.46
+    },
+    {
+      "airline": "9E",
+      "total_flights": 483,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 119,
+      "ontime_flights": 364,
+      "ontime_percentage": 75.36
+    },
+    {
+      "airline": "F9",
+      "total_flights": 469,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 84,
+      "ontime_flights": 385,
+      "ontime_percentage": 82.09
+    },
+    {
+      "airline": "NK",
+      "total_flights": 455,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 84,
+      "ontime_flights": 371,
+      "ontime_percentage": 81.54
+    },
+    {
+      "airline": "OH",
+      "total_flights": 336,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 63,
+      "ontime_flights": 273,
+      "ontime_percentage": 81.25
+    },
+    {
+      "airline": "G4",
+      "total_flights": 175,
+      "avg_departure_delay": NaN,
+      "avg_arrival_delay": NaN,
+      "delayed_flights": 35,
+      "ontime_flights": 140,
+      "ontime_percentage": 80.0
+    },
+    {
+      "airline": "HA",
+      "total_flights": 161,
+      "avg_departure_delay": 9.48,
+      "avg_arrival_delay": -85.91,
+      "delayed_flights": 21,
+      "ontime_flights": 140,
+      "ontime_percentage": 86.96
+    }
+  ]
+}

@@ -10,6 +10,8 @@ import sys
 import os
 from pathlib import Path
 import importlib.util
+from loguru import logger
+import numpy as np
 
 # Add debug logging at the top of the file
 print("Current working directory:", os.getcwd())
@@ -25,6 +27,9 @@ if AIRFLOW_HOME not in sys.path:
 sys.path.append('/opt/airflow/project')
 
 print("Python path after:", sys.path)
+
+# Add the project root directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import modules directly from files
 def import_module_from_path(module_name, file_path):
@@ -48,6 +53,19 @@ sys.path.append('/opt/airflow')
 from data_ingestion.ingest import process_flight_data as validate_data
 from data_processing.process import process_flight_data as process_data
 
+# Add logging wrapper
+def log_wrapper(func):
+    def wrapper(**context):
+        logger.info(f"Starting {func.__name__}")
+        try:
+            result = func(**context)
+            logger.info(f"Successfully completed {func.__name__}")
+            return result
+        except Exception as e:
+            logger.error(f"Error in {func.__name__}: {str(e)}")
+            raise
+    return wrapper
+
 def process_flight_data(**context):
     return ingest_module.process_flight_data()
 
@@ -55,108 +73,159 @@ def process_data(**context):
     return process_module.process_flight_data()
 
 def load_to_postgres(**context):
-    """Load processed data into PostgreSQL database"""
-    df = pd.read_csv('/opt/airflow/data/processed/processed_flights.csv')
-    
-    pg_hook = PostgresHook(postgres_conn_id='airflow_db')
-    
-    create_table_sql = """
-    CREATE TABLE IF NOT EXISTS processed_flights (
-        flight_date DATE,
-        airline VARCHAR(50),
-        flight_number VARCHAR(20),
-        origin VARCHAR(10),
-        destination VARCHAR(10),
-        scheduled_departure TIME,
-        actual_departure TIME,
-        departure_delay INT,
-        scheduled_arrival TIME,
-        actual_arrival TIME,
-        arrival_delay INT,
-        flight_status VARCHAR(20)
-    );
-    """
-    pg_hook.run(create_table_sql)
-    
-    pg_hook.insert_rows(
-        table='processed_flights',
-        rows=df.values.tolist(),
-        target_fields=df.columns.tolist(),
-        replace=True
-    )
-    
-    return "Data loaded to PostgreSQL"
+    try:
+        # Create PostgreSQL connection hook
+        pg_hook = PostgresHook(postgres_conn_id='flight_db')
+        
+        # Create table if it doesn't exist
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS flights (
+            flight_date DATE,
+            airline VARCHAR(10),
+            flight_number INTEGER,
+            origin VARCHAR(5),
+            destination VARCHAR(5),
+            scheduled_departure VARCHAR(10),
+            actual_departure VARCHAR(10),
+            scheduled_arrival VARCHAR(10),
+            actual_arrival VARCHAR(10),
+            departure_delay FLOAT,
+            arrival_delay FLOAT,
+            flight_status VARCHAR(20)
+        );
+        """
+        pg_hook.run(create_table_sql)
+        
+        # Load processed data
+        df = pd.read_csv('/opt/airflow/data/processed/final_flights.csv')
+        
+        # Convert numpy types to Python native types
+        df = df.replace({np.nan: None})
+        df['flight_number'] = df['flight_number'].astype(int)
+        df['departure_delay'] = df['departure_delay'].astype(float)
+        df['arrival_delay'] = df['arrival_delay'].astype(float)
+        
+        # Convert dates to proper format
+        df['flight_date'] = pd.to_datetime(df['flight_date']).dt.strftime('%Y-%m-%d')
+        
+        # Convert DataFrame to list of tuples
+        rows = list(df.itertuples(index=False, name=None))
+        
+        # Insert data
+        insert_sql = """
+        INSERT INTO flights (
+            flight_date, airline, flight_number, origin, destination,
+            scheduled_departure, actual_departure, scheduled_arrival,
+            actual_arrival, departure_delay, arrival_delay, flight_status
+        ) VALUES %s;
+        """
+        pg_hook.insert_rows('flights', rows)
+        
+        return "Data loaded to PostgreSQL successfully"
+        
+    except Exception as e:
+        logger.error(f"Error loading to PostgreSQL: {str(e)}")
+        raise
 
 def run_performance_metrics(**context):
     """Calculate and store performance metrics"""
-    pg_hook = PostgresHook(postgres_conn_id='airflow_db')
-    
-    metrics_query = """
-    WITH delay_stats AS (
+    try:
+        # Use the same connection ID as load_to_postgres
+        pg_hook = PostgresHook(postgres_conn_id='flight_db')
+        
+        metrics_query = """
+        WITH delay_stats AS (
+            SELECT 
+                airline,
+                COUNT(*) as total_flights,
+                AVG(departure_delay) as avg_departure_delay,
+                AVG(arrival_delay) as avg_arrival_delay,
+                COUNT(CASE WHEN flight_status = 'Delayed' THEN 1 END) as delayed_flights,
+                COUNT(CASE WHEN flight_status = 'On Time' THEN 1 END) as ontime_flights
+            FROM flights
+            GROUP BY airline
+        )
         SELECT 
             airline,
-            COUNT(*) as total_flights,
-            AVG(departure_delay) as avg_departure_delay,
-            AVG(arrival_delay) as avg_arrival_delay,
-            COUNT(CASE WHEN flight_status = 'Delayed' THEN 1 END) as delayed_flights,
-            COUNT(CASE WHEN flight_status = 'On Time' THEN 1 END) as ontime_flights
-        FROM processed_flights
-        GROUP BY airline
-    )
-    SELECT 
-        airline,
-        total_flights,
-        ROUND(avg_departure_delay::numeric, 2) as avg_departure_delay,
-        ROUND(avg_arrival_delay::numeric, 2) as avg_arrival_delay,
-        delayed_flights,
-        ontime_flights,
-        ROUND((ontime_flights::float / total_flights * 100)::numeric, 2) as ontime_percentage
-    FROM delay_stats
-    ORDER BY total_flights DESC;
-    """
-    
-    df = pg_hook.get_pandas_df(metrics_query)
-    
-    # Save as CSV
-    df.to_csv('/opt/airflow/data/processed/flight_metrics.csv', index=False)
-    
-    # Save as JSON with metrics
-    metrics_dict = {
-        'generated_at': datetime.now().isoformat(),
-        'total_flights': int(df['total_flights'].sum()),
-        'total_delayed_flights': int(df['delayed_flights'].sum()),
-        'overall_ontime_percentage': float(df['ontime_flights'].sum() / df['total_flights'].sum() * 100),
-        'airlines': df.to_dict(orient='records')
-    }
-    
-    with open('/opt/airflow/data/processed/flight_metrics.json', 'w') as f:
-        json.dump(metrics_dict, f, indent=2)
-    
-    return "Metrics generated"
+            total_flights,
+            ROUND(avg_departure_delay::numeric, 2) as avg_departure_delay,
+            ROUND(avg_arrival_delay::numeric, 2) as avg_arrival_delay,
+            delayed_flights,
+            ontime_flights,
+            ROUND((ontime_flights::float / total_flights * 100)::numeric, 2) as ontime_percentage
+        FROM delay_stats
+        ORDER BY total_flights DESC;
+        """
+        
+        df = pg_hook.get_pandas_df(metrics_query)
+        
+        # Save as CSV
+        metrics_dir = '/opt/airflow/data/processed'
+        os.makedirs(metrics_dir, exist_ok=True)
+        df.to_csv(f'{metrics_dir}/flight_metrics.csv', index=False)
+        
+        # Save as JSON with metrics
+        metrics_dict = {
+            'generated_at': datetime.now().isoformat(),
+            'total_flights': int(df['total_flights'].sum()),
+            'total_delayed_flights': int(df['delayed_flights'].sum()),
+            'overall_ontime_percentage': float(df['ontime_flights'].sum() / df['total_flights'].sum() * 100),
+            'airlines': df.to_dict(orient='records')
+        }
+        
+        with open(f'{metrics_dir}/flight_metrics.json', 'w') as f:
+            json.dump(metrics_dict, f, indent=2)
+        
+        return "Metrics generated successfully"
+        
+    except Exception as e:
+        logger.error(f"Error generating metrics: {str(e)}")
+        raise
 
 def run_route_analysis(**context):
     """Analyze route performance"""
-    pg_hook = PostgresHook(postgres_conn_id='airflow_db')
-    
-    route_query = """
-    SELECT 
-        origin,
-        destination,
-        COUNT(*) as total_flights,
-        ROUND(AVG(departure_delay)::numeric, 2) as avg_departure_delay,
-        ROUND(AVG(arrival_delay)::numeric, 2) as avg_arrival_delay,
-        COUNT(CASE WHEN flight_status = 'Delayed' THEN 1 END) as delayed_flights,
-        ROUND((COUNT(CASE WHEN flight_status = 'On Time' THEN 1 END)::float / 
-               COUNT(*) * 100)::numeric, 2) as ontime_percentage
-    FROM processed_flights
-    GROUP BY origin, destination
-    ORDER BY total_flights DESC;
-    """
-    
-    df = pg_hook.get_pandas_df(route_query)
-    df.to_csv('/opt/airflow/data/processed/route_analysis.csv', index=False)
-    
-    return "Route analysis complete"
+    try:
+        # Use the same connection ID as other tasks
+        pg_hook = PostgresHook(postgres_conn_id='flight_db')
+        
+        route_query = """
+        SELECT 
+            origin,
+            destination,
+            COUNT(*) as total_flights,
+            ROUND(AVG(departure_delay)::numeric, 2) as avg_departure_delay,
+            ROUND(AVG(arrival_delay)::numeric, 2) as avg_arrival_delay,
+            COUNT(CASE WHEN flight_status = 'Delayed' THEN 1 END) as delayed_flights,
+            ROUND((COUNT(CASE WHEN flight_status = 'On Time' THEN 1 END)::float / 
+                   COUNT(*) * 100)::numeric, 2) as ontime_percentage
+        FROM flights
+        GROUP BY origin, destination
+        ORDER BY total_flights DESC;
+        """
+        
+        df = pg_hook.get_pandas_df(route_query)
+        
+        # Save route analysis
+        output_dir = '/opt/airflow/data/processed'
+        os.makedirs(output_dir, exist_ok=True)
+        df.to_csv(f'{output_dir}/route_analysis.csv', index=False)
+        
+        # Create JSON summary
+        summary = {
+            'generated_at': datetime.now().isoformat(),
+            'total_routes': len(df),
+            'top_routes': df.head(10).to_dict('records'),
+            'worst_performing_routes': df.nsmallest(5, 'ontime_percentage').to_dict('records')
+        }
+        
+        with open(f'{output_dir}/route_analysis.json', 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        return "Route analysis complete"
+        
+    except Exception as e:
+        logger.error(f"Error in route analysis: {str(e)}")
+        raise
 
 def generate_api_metrics(**context):
     """Generate metrics for API consumption"""
@@ -195,55 +264,59 @@ default_args = {
     'start_date': datetime(2024, 1, 1),
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 3,
+    'retries': 1,
     'retry_delay': timedelta(minutes=5),
-    'execution_timeout': timedelta(hours=1),
-    'catchup': False,
 }
 
 dag = DAG(
     'flight_data_pipeline',
     default_args=default_args,
-    description='Pipeline for flight data processing',
+    description='Pipeline for processing flight data',
     schedule_interval=timedelta(days=1),
-    catchup=False,
-    tags=['flight_data'],
+    catchup=False
 )
 
-# Validation task
-validate_task = PythonOperator(
-    task_id='validate_data',
-    python_callable=validate_data,
+# Task 1: Data Ingestion
+ingest_task = PythonOperator(
+    task_id='ingest_flight_data',
+    python_callable=log_wrapper(validate_data),
     provide_context=True,
     dag=dag,
 )
 
-# Processing task
+# Task 2: Data Processing
 process_task = PythonOperator(
-    task_id='process_data',
-    python_callable=process_data,
+    task_id='process_flight_data',
+    python_callable=log_wrapper(process_data),
     provide_context=True,
     dag=dag,
 )
 
-load_db_task = PythonOperator(
+# Task 3: Load to PostgreSQL
+load_task = PythonOperator(
     task_id='load_to_postgres',
-    python_callable=load_to_postgres,
+    python_callable=log_wrapper(load_to_postgres),
+    provide_context=True,
     dag=dag,
 )
 
+# Task 4: Calculate Performance Metrics
 performance_metrics_task = PythonOperator(
     task_id='calculate_performance_metrics',
-    python_callable=run_performance_metrics,
+    python_callable=log_wrapper(run_performance_metrics),
+    provide_context=True,
     dag=dag,
 )
 
+# Task 5: Route Analysis
 route_analysis_task = PythonOperator(
     task_id='analyze_routes',
-    python_callable=run_route_analysis,
+    python_callable=log_wrapper(run_route_analysis),
+    provide_context=True,
     dag=dag,
 )
 
+# Task 6: Generate API Metrics
 api_metrics_task = PythonOperator(
     task_id='generate_api_metrics',
     python_callable=generate_api_metrics,
@@ -251,8 +324,7 @@ api_metrics_task = PythonOperator(
 )
 
 # Set task dependencies
-validate_task >> process_task >> load_db_task
-load_db_task >> [performance_metrics_task, route_analysis_task]
+ingest_task >> process_task >> load_task >> [performance_metrics_task, route_analysis_task]
 [performance_metrics_task, route_analysis_task] >> api_metrics_task
 
 # Add description
@@ -262,7 +334,9 @@ This DAG orchestrates the flight data processing pipeline:
 1. Ingests data from SFTP or local directory
 2. Validates data quality
 3. Processes and transforms data
-4. Saves results
+4. Loads data to PostgreSQL
+5. Generates metrics and route analysis in parallel
+6. Creates API metrics
 
 ## Schedule
 Runs daily at midnight UTC

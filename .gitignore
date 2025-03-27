@@ -1,7 +1,12 @@
 # Data files
-data/processed/processed_flights_full.csv
 data/processed/*.csv
 data/raw/*.csv
+!data/processed/.gitkeep
+!data/raw/.gitkeep
+
+# Keep the directories but not the contents
+data/processed/
+data/raw/
 !data/processed/.gitkeep
 !data/raw/.gitkeep
 
